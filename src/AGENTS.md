@@ -1,0 +1,5 @@
+- Preserve the first-party Codex Responses contract, stable prompt-cache identity, and validated connection-scoped continuation.
+- Route root turns by immutable `conversationId`. Keep summarization, subagent, browser, computer, automation, and group policies explicit.
+- Reuse one configured OAuth store. Never add login, copy refresh credentials, or expose account identifiers.
+- Keep Grok message and tool translation deterministic. Tool calls and results must retain one identity through normalization.
+- Diagnostics may contain routing, transport, timing, and usage fields only. Never add bodies, prompts, tool arguments, or authorization data.

@@ -1,0 +1,5 @@
+- `patch-host.ts` is the only Sand host mutation owner. Never hand-edit or add another bundle writer.
+- Require one known prelude, unique structural anchors, unique markers, a pristine backup, and idempotent re-entry.
+- An unfamiliar or partially installed bundle without its backup must fail before mutation.
+- Restart through Sand's idle-aware supervisor. Do not restore direct process killing, environment copying, or manual host spawning.
+- The control supervisor owns Bun child restart, shutdown, PID files, stale-lock recovery, and bounded crash backoff.

@@ -1,0 +1,5 @@
+- Keep this a dependency-free static interface served by the local control API. Do not introduce a frontend framework for ordinary settings work.
+- Render real discovered profiles, routes, telemetry, and recovery state. Never add fabricated metrics or placeholder operational data.
+- Send all API requests through the control-token wrapper. Do not expose credential files, account identifiers, or raw logs.
+- Preserve semantic tables and forms, keyboard operation, visible focus, narrow-screen reachability, and reduced-motion behavior.
+- Use the existing sharp graphite and acid-green visual language. Add decoration only when it clarifies router state or topology.

@@ -1,0 +1,3 @@
+- Keep the CLI a thin composition surface over shared owners. Do not duplicate config validation, OAuth, patching, service, or supervisor policy here.
+- Resolve user-facing agent names against live profiles once, then persist and pass immutable IDs.
+- Preserve install order: initialize config, validate an existing OAuth store, patch, restart the control service, then restart the Sand host.

@@ -1,0 +1,6 @@
+- Keep the control plane optional. Inference must continue when the Bun service or UI is unavailable.
+- Bind locally and preserve control-token, Host, Origin, CSP, and fixed telemetry-field protections.
+- Validate every external config body through the canonical router schema before writing atomically.
+- Automatic recovery may call the checked patcher and Sand's native supervisor only. Persist a required restart across service failure.
+- Unknown host shapes fail closed and produce sanitized diagnostics. Never weaken compatibility checks from the UI.
+- Retained usage comes from whitelisted structured events. Do not store raw diagnostic lines in SQLite.
