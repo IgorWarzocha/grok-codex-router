@@ -7,7 +7,7 @@ export interface GrokAgent {
   name: string;
 }
 
-export function agentsRoot(): string {
+function agentsRoot(): string {
   return path.join(process.env.SAND_DATA_ROOT || path.join(os.homedir(), "sand-data"), "agents");
 }
 

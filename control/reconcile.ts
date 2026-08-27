@@ -5,7 +5,7 @@ import path from "node:path";
 import { spawn } from "node:child_process";
 import { readSupervisorStatus, requestHostRestart, supervisorHasPendingCommand } from "../src/sand-supervisor.js";
 
-export type ReconcilePhase = "starting" | "healthy" | "checking" | "patching" | "waiting" | "restarting" | "incompatible" | "error";
+type ReconcilePhase = "starting" | "healthy" | "checking" | "patching" | "waiting" | "restarting" | "incompatible" | "error";
 
 export interface ReconcileState {
   phase: ReconcilePhase;

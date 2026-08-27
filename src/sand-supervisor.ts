@@ -49,7 +49,7 @@ export function readSupervisorStatus(): SandSupervisorStatus {
   };
 }
 
-export function supervisorReady(): boolean {
+function supervisorReady(): boolean {
   try {
     return Date.now() - readSupervisorStatus().updatedAtMs < 30000;
   } catch {

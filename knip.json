@@ -1,0 +1,15 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "bin/*.ts",
+    "control/server.ts",
+    "control/telemetry-check.ts",
+    "scripts/*.ts",
+    "tests/**/*.test.ts",
+    "ui/app.mjs"
+  ],
+  "project": [
+    "{bin,control,scripts,src,tests}/**/*.ts",
+    "ui/**/*.mjs"
+  ]
+}

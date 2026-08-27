@@ -3,11 +3,11 @@ import os from "node:os";
 import path from "node:path";
 
 export type ReasoningEffort = "off" | "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
-export type TransportMode = "cached-websocket" | "websocket" | "sse";
-export type WorkloadClass = "agent" | "summarization" | "subagent" | "browser" | "computer" | "automation" | "group";
+type TransportMode = "cached-websocket" | "websocket" | "sse";
+type WorkloadClass = "agent" | "summarization" | "subagent" | "browser" | "computer" | "automation" | "group";
 type RoutedWorkload = Exclude<WorkloadClass, "agent">;
 
-export interface Route {
+interface Route {
   model: string;
   reasoningEffort: ReasoningEffort;
 }
@@ -26,7 +26,6 @@ export interface RouterConfig {
   transport: {
     mode: TransportMode;
     maxRetries: number;
-    idleTimeoutMs: number;
   };
 }
 
@@ -56,8 +55,7 @@ export const DEFAULT_CONFIG = Object.freeze<RouterConfig>({
   },
   transport: {
     mode: "cached-websocket",
-    maxRetries: 5,
-    idleTimeoutMs: 300000
+    maxRetries: 5
   }
 });
 
@@ -107,12 +105,8 @@ export function validateConfig(raw: unknown): RouterConfig {
     throw new Error(`transport.mode must be one of ${[...TRANSPORTS].join(", ")}`);
   }
   const maxRetries = Number(raw.transport["maxRetries"]);
-  const idleTimeoutMs = Number(raw.transport["idleTimeoutMs"]);
   if (!Number.isInteger(maxRetries) || maxRetries < 0 || maxRetries > 20) {
     throw new Error("transport.maxRetries must be an integer from 0 to 20");
-  }
-  if (!Number.isFinite(idleTimeoutMs) || idleTimeoutMs < 1000) {
-    throw new Error("transport.idleTimeoutMs must be at least 1000");
   }
   return {
     version: 1,
@@ -120,7 +114,7 @@ export function validateConfig(raw: unknown): RouterConfig {
     default: validateRoute(raw.default, "default"),
     agents,
     classes,
-    transport: { mode: raw.transport["mode"] as TransportMode, maxRetries, idleTimeoutMs: Math.floor(idleTimeoutMs) }
+    transport: { mode: raw.transport["mode"] as TransportMode, maxRetries }
   };
 }
 
@@ -149,7 +143,7 @@ export function writeConfig(config: RouterConfig): string {
   return file;
 }
 
-export function workloadClass(options: SandSessionOptions = {}): WorkloadClass {
+function workloadClass(options: SandSessionOptions = {}): WorkloadClass {
   if (options.isSummarizationSession === true) return "summarization";
   if (options.isComputerUseSubagent === true) return "computer";
   if (options.isBrowserUseSubagent === true) return "browser";

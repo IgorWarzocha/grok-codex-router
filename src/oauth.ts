@@ -49,7 +49,7 @@ function decodeJwt(token: string): Record<string, unknown> {
   }
 }
 
-export function accountIdFromToken(token: string): string | undefined {
+function accountIdFromToken(token: string): string | undefined {
   const auth = decodeJwt(token)[JWT_CLAIM];
   return auth && typeof auth === "object" && "chatgpt_account_id" in auth &&
     typeof auth.chatgpt_account_id === "string" ? auth.chatgpt_account_id : undefined;

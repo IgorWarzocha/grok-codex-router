@@ -1,5 +1,5 @@
 - Treat `src/`, `control/`, `scripts/`, `bin/`, and `ui/` as canonical. Never patch `dist/`, `node_modules/`, or the installed Sand bundle by hand.
 - Load applicable OAuth, prompt-caching, interface, review, and dependency guidance before changing a matching boundary.
 - Never log credentials, prompts, message bodies, tool arguments, authorization headers, or OAuth callback material.
-- Verify changed wire contracts with `npm run check`, then a direct tool round-trip and one native Grok Bot turn.
+- Verify changed wire contracts with `bun run check`, then a direct tool round-trip and one native Grok Bot turn.
 - Keep `.agents/skills/grok-codex-router/` aligned with installation, automatic recovery, issue reporting, and verification behavior.

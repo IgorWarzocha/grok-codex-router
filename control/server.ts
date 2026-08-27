@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { discoverAgents } from "../src/agents.js";
 import { loadConfig, validateConfig, writeConfig } from "../src/config.js";
+import { controlPort, controlUrl } from "../src/control-address.js";
 import { issueReport } from "../src/diagnostics.js";
 import { credentialStatus } from "../src/oauth.js";
 import { requestHostRestart } from "../src/sand-supervisor.js";
@@ -13,7 +14,8 @@ import { TelemetryStore } from "./telemetry.js";
 
 process.umask(0o077);
 
-const port = Number(process.env.SAND_CODEX_ROUTER_PORT || 3210);
+const port = controlPort();
+const localUrl = controlUrl();
 const routerHome = process.env.SAND_CODEX_ROUTER_HOME || path.resolve(__dirname, "..", "..");
 const publicRoot = path.join(routerHome, "ui");
 const dataRoot = process.env.SAND_DATA_ROOT || path.join(os.homedir(), "sand-data");
@@ -120,7 +122,7 @@ async function requestBody(request: http.IncomingMessage): Promise<unknown> {
 function authorized(request: http.IncomingMessage): boolean {
   const origin = request.headers.origin;
   const allowedOrigins = new Set([
-    "http://127.0.0.1:" + port,
+    localUrl,
     "http://localhost:" + port
   ]);
   return request.headers["x-grok-codex-router-token"] === token &&
@@ -180,12 +182,22 @@ async function api(request: http.IncomingMessage, response: http.ServerResponse,
   return true;
 }
 
+const PUBLIC_ASSETS = new Map<string, string>([
+  ["/favicon.svg", "image/svg+xml"],
+  ["/app.mjs", "text/javascript; charset=utf-8"],
+  ["/configuration.mjs", "text/javascript; charset=utf-8"],
+  ["/monitoring.mjs", "text/javascript; charset=utf-8"],
+  ["/navigation.mjs", "text/javascript; charset=utf-8"],
+  ["/styles.css", "text/css; charset=utf-8"],
+  ["/overview.css", "text/css; charset=utf-8"],
+  ["/stats.css", "text/css; charset=utf-8"],
+  ["/configuration.css", "text/css; charset=utf-8"]
+]);
+
 function publicFile(pathname: string): { file: string; contentType: string } | undefined {
-  if (pathname === "/favicon.svg") return { file: path.join(publicRoot, "favicon.svg"), contentType: "image/svg+xml" };
-  if (pathname === "/app.js") return { file: path.join(publicRoot, "app.js"), contentType: "text/javascript; charset=utf-8" };
-  if (pathname === "/styles.css") return { file: path.join(publicRoot, "styles.css"), contentType: "text/css; charset=utf-8" };
   if (pathname === "/" || pathname === "/index.html") return { file: path.join(publicRoot, "index.html"), contentType: "text/html; charset=utf-8" };
-  return undefined;
+  const contentType = PUBLIC_ASSETS.get(pathname);
+  return contentType ? { file: path.join(publicRoot, pathname.slice(1)), contentType } : undefined;
 }
 
 const server = http.createServer((request, response) => {

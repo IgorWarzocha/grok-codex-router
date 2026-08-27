@@ -1,0 +1,122 @@
+fieldset {
+  min-width: 0;
+  margin: 0 0 20px;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  width: 100%;
+  margin-bottom: 10px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--line-strong);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.route-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+input,
+select {
+  width: 100%;
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 2px;
+  outline: 0;
+  background-color: var(--surface);
+  color: var(--text);
+}
+
+select {
+  appearance: none;
+  padding-inline-end: 40px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='m1 1 5 5 5-5' fill='none' stroke='%23a5ada2' stroke-width='2'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 12px 8px;
+}
+
+input:disabled,
+select:disabled {
+  opacity: 0.48;
+}
+
+.route-table input,
+.route-table select {
+  min-width: 138px;
+}
+
+.route-table-wrap {
+  max-height: 310px;
+  overflow: auto;
+  border-block: 1px solid var(--line);
+}
+
+.route-table-wrap thead {
+  position: sticky;
+  z-index: 1;
+  top: 0;
+  background: var(--bg);
+}
+
+.agent-models-wrap {
+  max-height: calc(100vh - 380px);
+}
+
+.task-models-wrap {
+  max-height: calc(100vh - 250px);
+}
+
+.agent-route-table,
+.workload-route-table {
+  table-layout: fixed;
+}
+
+.agent-route-table th:nth-child(1),
+.workload-route-table th:nth-child(1) {
+  width: 28%;
+}
+
+.agent-route-table th:nth-child(2),
+.workload-route-table th:nth-child(2) {
+  width: 42%;
+}
+
+.agent-route-table th:nth-child(3),
+.workload-route-table th:nth-child(3) {
+  width: 30%;
+}
+
+.agent-route-table select,
+.workload-route-table select {
+  min-width: 0;
+}
+
+.settings-grid {
+  max-width: 760px;
+}
+
+@media (max-width: 920px) {
+  .route-table-wrap {
+    max-height: none;
+  }
+}
+
+@media (max-width: 620px) {
+  .route-grid,
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}

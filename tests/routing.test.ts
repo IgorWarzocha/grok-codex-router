@@ -36,8 +36,10 @@ test("root agents route by immutable ID while workload classes stay explicit", (
 });
 
 test("auxiliary executors cannot replace the root turn continuation lane", () => {
-  const root = "grok:agent-a:agent";
+  const root = "grok:" + "a".repeat(59);
   assert.equal(executorSessionIdFor(root, 0), root);
-  assert.equal(executorSessionIdFor(root, 1), root + ":aux:1");
+  assert.equal(executorSessionIdFor(root, 1).length, 64);
+  assert.match(executorSessionIdFor(root, 1), /:aux:1$/);
   assert.notEqual(executorSessionIdFor(root, 2), executorSessionIdFor(root, 1));
+  assert.notEqual(executorSessionIdFor(root, 1), root);
 });

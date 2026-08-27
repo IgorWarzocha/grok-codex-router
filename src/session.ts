@@ -1,10 +1,9 @@
 import crypto from "node:crypto";
 import { loadConfig, resolveRoute, type ResolvedRoute, type SandSessionOptions } from "./config.js";
 export { ensureControlService } from "./control-service.js";
-import { getCredentials } from "./oauth.js";
-import { runTransport, diagnostic } from "./transport.js";
 import { type NormalizedUsage, type RouterResult, type StreamPart } from "./response.js";
-import { buildRequest } from "./wire.js";
+import { createCodexTurnState } from "./turn-state.js";
+import { executeCodexTurn } from "./turn-execution.js";
 
 interface SessionOptions {
   requestedModel?: unknown;
@@ -50,7 +49,9 @@ function sessionIdFor(route: ResolvedRoute): string {
 }
 
 export function executorSessionIdFor(sessionId: string, ordinal: number): string {
-  return ordinal === 0 ? sessionId : (sessionId + ":aux:" + ordinal).slice(0, 64);
+  if (ordinal === 0) return sessionId;
+  const suffix = ":aux:" + ordinal;
+  return sessionId.slice(0, 64 - suffix.length) + suffix;
 }
 
 function emptyUsage(): NormalizedUsage {
@@ -103,7 +104,7 @@ export function createExecutor(
   executorSessionId: string,
   initialMessages?: unknown
 ): PromptExecutor {
-  const state: { messages: unknown[] } = { messages: [] };
+  const state = { messages: [] as unknown[], turnState: createCodexTurnState() };
   if (initialMessages) {
     state.messages.push(...(Array.isArray(initialMessages) ? initialMessages : [initialMessages]));
   }
@@ -125,44 +126,15 @@ export function createExecutor(
       try { session.onRequestId && session.onRequestId(invocationId); } catch {}
       const processing = (async () => {
         try {
-          const config = loadConfig();
-          const route = resolveRoute(config, session.sessionOptions);
-          const body = buildRequest(state.messages, tools, route, executorSessionId);
-          const credentials = await getCredentials(config.authStore, ctx && ctx.signal);
-          diagnostic({
-            type: "route",
-            sessionId: executorSessionId,
-            agentId: route.agentId,
-            workload: route.workload,
-            model: route.model,
-            reasoningEffort: route.reasoningEffort
-          });
-          const startedAt = Date.now();
-          const result = await runTransport({
-            body,
-            credentials,
+          return await executeCodexTurn({
+            messages: state.messages,
+            tools,
+            sessionOptions: session.sessionOptions,
             sessionId: executorSessionId,
             invocationId,
-            config,
-            signal: ctx && ctx.signal
+            turnState: state.turnState,
+            signal: ctx?.signal
           });
-          diagnostic({
-            type: "turn",
-            sessionId: executorSessionId,
-            agentId: route.agentId,
-            workload: route.workload,
-            model: route.model,
-            reasoningEffort: route.reasoningEffort,
-            transport: result.transport,
-            continuation: result.continuation,
-            socketReused: result.socketReused,
-            inputTokens: result.extendedUsage.inputTokens,
-            cachedInputTokens: result.extendedUsage.cacheReadTokens,
-            cacheWriteInputTokens: result.extendedUsage.cacheWriteTokens,
-            outputTokens: result.extendedUsage.outputTokens,
-            durationMs: Date.now() - startedAt
-          });
-          return result;
         } catch (error) {
           return errorResult(session.route.model, invocationId, error);
         }

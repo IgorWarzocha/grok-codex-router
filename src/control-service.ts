@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
+import { controlUrl } from "./control-address.js";
 
 export interface ControlServiceStatus {
   running: boolean;
@@ -50,7 +51,7 @@ export function controlServiceStatus(): ControlServiceStatus {
   return {
     running: Boolean(pid && ownsSupervisor(pid)),
     ...(pid && ownsSupervisor(pid) ? { pid } : {}),
-    url: "http://127.0.0.1:" + (process.env.SAND_CODEX_ROUTER_PORT || "3210"),
+    url: controlUrl(),
     logFile: logFile()
   };
 }

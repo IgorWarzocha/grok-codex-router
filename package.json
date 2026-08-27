@@ -1,5 +1,5 @@
 {
-  "name": "grok-codex-router",
+  "name": "@howaboua/grok-codex-router",
   "version": "0.1.0",
   "description": "First-party Codex Responses transport and per-agent model router for Grok Bot",
   "type": "commonjs",
@@ -7,9 +7,15 @@
   "bin": {
     "grok-codex-router": "dist/bin/grok-codex-router.js"
   },
+  "files": [
+    ".agents/skills/grok-codex-router/",
+    "dist/",
+    "ui/"
+  ],
   "scripts": {
-    "build": "rm -rf dist && tsc -p tsconfig.json && chmod +x dist/bin/grok-codex-router.js dist/scripts/*.js",
-    "check": "npm run build && node --test dist/tests/*.test.js && bun dist/control/telemetry-check.js",
+    "build": "rm -rf dist && bun node_modules/typescript/bin/tsc -p tsconfig.json && chmod +x dist/bin/grok-codex-router.js dist/scripts/*.js",
+    "check": "bun run knip && bun run build && node --test dist/tests/*.test.js && bun dist/control/telemetry-check.js",
+    "knip": "node node_modules/knip/bin/knip.js",
     "test": "node --test dist/tests/*.test.js"
   },
   "dependencies": {
@@ -18,10 +24,22 @@
   "devDependencies": {
     "@types/node": "26.2.0",
     "@types/ws": "8.18.1",
+    "knip": "6.32.3",
     "typescript": "7.0.2"
   },
   "engines": {
     "node": ">=22.19.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/IgorWarzocha/grok-codex-router.git"
+  },
+  "bugs": {
+    "url": "https://github.com/IgorWarzocha/grok-codex-router/issues"
+  },
+  "homepage": "https://github.com/IgorWarzocha/grok-codex-router#readme",
+  "publishConfig": {
+    "access": "public"
   },
   "license": "MIT"
 }

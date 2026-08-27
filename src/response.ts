@@ -1,12 +1,12 @@
 import {
-  assistantMessageItem,
   isRecord,
   parseArguments,
   sanitizeToolId,
   sanitizeToolName,
   stringValue,
   type JsonObject
-} from "./wire.js";
+} from "./sand-values.js";
+import { assistantMessageItem } from "./message-wire.js";
 
 export interface StreamEvent extends JsonObject {
   type?: string;
@@ -59,7 +59,13 @@ export interface RouterResult extends NormalizedUsage {
   reconstructedItems: unknown[];
 }
 
-export function usageFromResponse(response: ProviderResponse | undefined): NormalizedUsage {
+export type TransportResult = RouterResult & {
+  transport: "websocket" | "sse";
+  continuation: string;
+  socketReused: boolean;
+};
+
+function usageFromResponse(response: ProviderResponse | undefined): NormalizedUsage {
   const usage = isRecord(response?.usage) ? response.usage : {};
   const details = isRecord(usage["input_tokens_details"]) ? usage["input_tokens_details"] : {};
   const cached = Number(details["cached_tokens"]) || 0;
@@ -190,4 +196,21 @@ export class ResponseAccumulator {
       ]
     };
   }
+}
+
+export async function collectResponse(
+  events: AsyncIterable<StreamEvent>,
+  model: string,
+  invocationId: string | undefined
+): Promise<RouterResult> {
+  const accumulator = new ResponseAccumulator();
+  const parts: StreamPart[] = [];
+  for await (const event of events) accumulator.consume(event, (part) => parts.push(part));
+  if (!accumulator.response) throw new Error("Codex stream closed before response.completed");
+  if (accumulator.response.status === "failed" || accumulator.response.status === "cancelled") {
+    const error = new Error("Codex response ended without a successful result") as Error & { retryable?: boolean };
+    error.retryable = false;
+    throw error;
+  }
+  return accumulator.result(model, invocationId, parts);
 }

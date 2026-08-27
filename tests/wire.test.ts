@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { convertMessages } from "../src/message-wire.js";
 import { ResponseAccumulator } from "../src/response.js";
-import { buildRequest, convertMessages, convertTools } from "../src/wire.js";
+import { convertTools } from "../src/tool-wire.js";
+import { buildRequest } from "../src/wire.js";
 
 test("Grok tool wrappers become Codex Responses tools without losing schemas", () => {
   const wrappedSchema = {};
@@ -25,6 +27,29 @@ test("Grok tool wrappers become Codex Responses tools without losing schemas", (
   });
 });
 
+test("native delivery tools become closed discriminated variants", () => {
+  const properties: Record<string, Record<string, unknown>> = Object.fromEntries([
+    "type", "content", "images", "reply_to", "channel", "to", "url", "alt",
+    "widget", "bcId", "secret"
+  ].map((name) => [name, { type: "string" }]));
+  properties["type"] = {
+    type: "string",
+    enum: ["text", "attachment", "widget", "cursor-agent", "secret-request"]
+  };
+  const tools = convertTools([{
+    name: "send_to_user",
+    parameters: {
+      jsonSchema: { type: "object", properties }
+    }
+  }]);
+  const schema = tools?.[0]?.["parameters"] as Record<string, unknown>;
+  const variants = schema["oneOf"] as Array<Record<string, unknown>>;
+
+  assert.equal(variants.length, 5);
+  assert.deepEqual(variants[0]?.["required"], ["type", "content"]);
+  assert.equal(variants.every((variant) => variant["additionalProperties"] === false), true);
+});
+
 test("legacy Grok tool IDs stay paired after deterministic Codex clamping", () => {
   const id = "tool_" + "legacy-grok-call-id_".repeat(5);
   const converted = convertMessages([
@@ -41,6 +66,23 @@ test("legacy Grok tool IDs stay paired after deterministic Codex clamping", () =
   const output = converted.input[1] as Record<string, unknown>;
   assert.equal(String(call["call_id"]).length, 64);
   assert.equal(output["call_id"], call["call_id"]);
+});
+
+test("Grok image payloads become valid Codex data URLs without forwarding local paths", () => {
+  const converted = convertMessages([{
+    role: "user",
+    content: [
+      { type: "image", mimeType: "image/png", data: "aGVsbG8=" },
+      { type: "image_url", url: "/workspace/uploads/private.png" }
+    ]
+  }]);
+  assert.deepEqual(converted.input, [{
+    role: "user",
+    content: [
+      { type: "input_image", detail: "auto", image_url: "data:image/png;base64,aGVsbG8=" },
+      { type: "input_text", text: "image content omitted because its source is not available to Codex" }
+    ]
+  }]);
 });
 
 test("repeated assistant text receives unique Responses item IDs", () => {
@@ -68,6 +110,18 @@ test("request identity carries routed model, effort, and prompt cache key", () =
     session_id: "grok:agent-a:agent",
     thread_id: "grok:agent-a:agent"
   });
+});
+
+test("GPT-5.6 reasoning uses the Codex effort contract", () => {
+  const request = (reasoningEffort: "off" | "none" | "minimal") => buildRequest(
+    [{ role: "user", content: "hello" }],
+    [],
+    { model: "gpt-5.6-sol", reasoningEffort, workload: "agent", agentId: "agent-a" },
+    "grok:agent-a:agent"
+  );
+  assert.equal(request("off")["reasoning"], undefined);
+  assert.deepEqual(request("none")["reasoning"], { effort: "none", summary: "auto" });
+  assert.deepEqual(request("minimal")["reasoning"], { effort: "low", summary: "auto" });
 });
 
 test("Responses events preserve tool identity and provider cache usage", () => {
@@ -109,6 +163,16 @@ test("Responses events preserve tool identity and provider cache usage", () => {
     toolName: "Check",
     args: { value: "OK" }
   });
+  const messages = result.response["messages"] as unknown[];
+  const next = convertMessages([
+    ...messages,
+    {
+      role: "tool",
+      content: [{ type: "tool-result", toolCallId: "call_1", result: "done" }]
+    }
+  ]);
+  assert.equal((next.input[0] as Record<string, unknown>)["call_id"], "call_1");
+  assert.equal((next.input[1] as Record<string, unknown>)["call_id"], "call_1");
   assert.equal(result.extendedUsage.inputTokens, 20);
   assert.equal(result.extendedUsage.cacheReadTokens, 80);
 });

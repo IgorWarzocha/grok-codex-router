@@ -1,17 +1,20 @@
 # Grok Codex Router
 
-Grok Codex Router keeps Grok Bot's native interface, tools, permissions, and agent loop while moving inference onto the first-party ChatGPT Codex Responses transport.
+> [!WARNING]
+> This is an unofficial experimental project. It patches Grok Bot and uses a private ChatGPT Codex endpoint that can change without notice. It may break your VM, lose work, violate service terms, or get an account restricted or banned. You use it entirely at your own risk. The author accepts no responsibility for broken installations, lost data, account action, or anything else that goes sideways.
 
-It is not an OpenAI-compatible Chat Completions proxy. The router speaks Codex Responses directly, reuses your existing OAuth account, preserves cached WebSocket continuation, supplies stable prompt-cache identity, and resolves model plus reasoning effort per agent and Grok Bot workload.
+Run Grok Bot on your ChatGPT Codex subscription without replacing Grok Bot's interface, tools, permissions, or agent loop.
+
+The router connects Grok Bot directly to the ChatGPT Codex Responses endpoint. It reuses an existing Pi or Codex CLI login, routes GPT-5.6 models and reasoning per agent, and keeps Grok Bot's background workloads independently configurable.
 
 ## Requirements
 
-- Grok Bot running inside a Sand VM
+- A Grok Bot Sand VM
 - Node.js 22.19 or newer
 - Bun 1.4 or newer
-- A valid OpenAI Codex OAuth account already stored by Pi or Codex CLI
+- An existing OpenAI Codex OAuth login from Pi or Codex CLI
 
-The router never starts login. It reads one selected credential store and refreshes that store atomically when needed. Tokens and request bodies are never written to router logs.
+The router does not include a login flow. If neither local account is usable, installation stops without modifying authentication.
 
 ## Install
 
@@ -21,49 +24,72 @@ cd ~/grok-codex-router
 ./install.sh
 ```
 
-The installer uses the locked dependencies, runs every check, links the management command, selects an existing authenticated OAuth store, patches the current Sand host, starts the control service, restarts through Sand's native supervisor, and completes a real cached tool round-trip.
+The installer builds and checks the router, selects an existing authenticated account, applies the Sand host patch, starts the local control service, restarts Grok Bot safely, and completes a real cached tool round-trip.
 
-It does not start OAuth login. If neither supported credential store is valid, installation stops and asks for human authentication.
+Open the control UI inside the VM:
 
-Open `http://127.0.0.1:3210` in the VM browser after installation.
+```text
+http://127.0.0.1:21371
+```
 
-## Control UI
+## Configure routing
 
-The local control UI discovers Grok Bot profiles from the live Sand data directory. Display names can change without breaking routes because settings remain keyed by immutable profile ID.
+The UI is the normal management surface.
 
-The UI manages:
+- **Default** sets the model and reasoning used by ordinary agents.
+- **Agents** adds an override for one discovered Grok Bot profile.
+- **Task models** controls summarization, subagents, browser use, computer use, automations, and group turns.
+- **Settings** selects the authenticated local account and transport mode.
+- **Stats** shows token use, prompt-cache reads, inference time, and failures by agent.
+- **Activity** shows sanitized recent routing and transport events.
 
-- Default model and reasoning
-- Per-agent overrides
-- Summarization, subagent, browser, computer, automation, and group routes
-- Cached WebSocket, WebSocket, and SSE transport settings
-- Existing Pi or Codex OAuth store selection
-- Sanitized usage totals, cache share, inference time, and recent transport activity
-- Host compatibility, recovery, restart, and issue diagnostics
+Agent settings are stored against immutable profile IDs. Renaming an agent does not break its route.
 
-The server binds only to `127.0.0.1`. Mutations require an installation-specific control token delivered only to the local UI. Telemetry storage accepts a fixed safe field list and excludes prompts, message bodies, tool arguments, credentials, account identifiers, and authorization headers.
+The UI offers GPT-5.6 Sol, Luna, and Terra. An agent can inherit the complete default route or override both model and reasoning effort.
 
-## Service behavior
+## Choose a transport
 
-Sand VMs do not run systemd. They use `tini`, `sand-exit-watch`, and Sand's own host supervisor.
+| Mode | Behavior |
+| --- | --- |
+| Cached WebSocket | Default. Reuses a live socket and sends a continuation delta only after validating the complete prior request and reconstructed response prefix. |
+| WebSocket | Reuses a live socket but sends complete request history. |
+| SSE | Sends complete request history over HTTP streaming. Also used as the automatic fallback when WebSocket transport is unavailable. |
 
-The installer adds a small checked bootstrap to the patched host. That bootstrap starts a detached router supervisor, which keeps the Bun control service running. The service survives Sand host restarts and bundle swaps. Host restart requests go back through Sand's native idle-aware supervisor instead of killing and replacing the process directly.
+A dead connection is replaced when the next request needs it. The router does not expire sockets, continuation state, or OpenAI prompt caching by age.
 
-The inference router does not depend on the UI. Existing turns continue if the control service is stopped.
+Every request keeps a stable prompt-cache identity for its agent workload. Provider-reported cache reads and token use appear in Stats. Codex turn state is retained through native tool calls and transport retries.
 
-## Automatic host recovery
+## Verify the VM
 
-The control service checks each changed Sand host bundle before touching it.
+Run the local contract suite after changing the router or after a suspicious Sand update:
 
-1. An already patched compatible bundle is left alone.
-2. A compatible unpatched update receives the idempotent host patch.
-3. Sand's native supervisor waits for active turns to become idle and restarts the host.
-4. The service records that the patched host loaded successfully.
-5. An unfamiliar bundle is left untouched and reported as incompatible.
+```bash
+cd ~/grok-codex-router
+bun run check
+```
 
-The patcher requires unique structural anchors, one marker set, a pristine backup, and a compiled router entry. It never guesses at a changed host shape.
+This suite does not contact OpenAI. It tests router-owned translation, routing, continuation, recovery, stream decoding, and resource cleanup. It also checks the live VM's host compatibility, patch state, package entrypoint, Sand supervisor, Bun runtime, agent discovery, local OAuth ownership, service state, and private file permissions.
 
-For an incompatible update:
+Run the explicit provider smoke check separately:
+
+```bash
+grok-codex-router verify
+```
+
+`verify` performs a two-request tool round-trip on a synthetic diagnostic identity. The second request must reuse the cached WebSocket and send only the tool-result tail.
+
+Finish deployment verification with one native Grok Bot turn that uses a harmless tool and returns through Grok Bot's normal delivery tool.
+
+## Updates and recovery
+
+The local service checks changed Sand host bundles before modifying them.
+
+- A compatible installed patch is left alone.
+- A compatible unpatched update is patched and restarted through Sand's supervisor.
+- An unfamiliar host is left untouched and reported as incompatible.
+- A partial patch or missing pristine backup fails closed.
+
+For a failed recovery:
 
 ```bash
 cd ~/grok-codex-router
@@ -72,62 +98,34 @@ git pull --ff-only
 grok-codex-router diagnose > /tmp/grok-codex-router-report.md
 ```
 
-The bundled skill at `.agents/skills/grok-codex-router/` tells Codex and compatible agents how to investigate a new host safely, prepare a tested fork, and report the sanitized compatibility result at [GitHub issues](https://github.com/IgorWarzocha/grok-codex-router/issues/new). Never attach the proprietary host bundle.
+Inspect the report before attaching it to a [GitHub issue](https://github.com/IgorWarzocha/grok-codex-router/issues/new). Never publish the Sand host bundle, OAuth files, prompts, tool arguments, request logs, or authorization data.
 
-## CLI operation
+The bundled skill in `.agents/skills/grok-codex-router/` gives Codex-compatible agents the safe investigation and recovery procedure.
 
-The UI is the ordinary management surface. The CLI remains available for recovery and automation.
+## CLI
 
 ```bash
 grok-codex-router status
 grok-codex-router agents
 grok-codex-router routes
 grok-codex-router route "Agent Name" gpt-5.6-sol high
-grok-codex-router class summarization gpt-5.6-sol medium
+grok-codex-router class summarization gpt-5.6-luna medium
+grok-codex-router auth-store pi
 grok-codex-router recover
 ```
 
-Agent names are resolved against live profiles before immutable IDs are written. An explicit agent route applies to ordinary root turns. Background workloads always use their own explicit class route.
+Agent names are resolved against live profiles before an immutable ID is saved. `auth-store` accepts only a Pi or Codex CLI store that is already authenticated.
 
-Switch credential ownership only to another store that is already authenticated:
+## Privacy and scope
 
-```bash
-grok-codex-router auth-store pi
-# or
-grok-codex-router auth-store codex
-```
+The control server listens only on `127.0.0.1`. Configuration changes require an installation-specific local token. Router telemetry has a fixed safe schema and excludes prompts, message bodies, tool arguments, credentials, account identifiers, and authorization headers.
 
-## Verify
-
-```bash
-grok-codex-router status
-grok-codex-router verify
-```
-
-`verify` performs a real two-request tool round-trip on a synthetic diagnostic identity. The second request must reuse the cached WebSocket and send only the new tool-result tail.
-
-A complete deployment check also includes a native Grok Bot turn through its UI. That turn should invoke a harmless native tool, deliver its result through Grok Bot's native delivery tool, and leave the agent idle.
-
-## Transport behavior
-
-- Direct `wss://chatgpt.com/backend-api/codex/responses`
-- Stable prompt-cache key, session ID, thread ID, and client metadata per agent workload
-- Connection-scoped `previous_response_id` only after validating the reconstructed history prefix
-- Initial WebSocket request plus five fresh retries by default
-- Sticky SSE fallback after WebSocket upgrade failure, oversized frames, or exhausted retries
-- Three-minute shared retry budget for provider throttling
-- Provider-reported cached, uncached, and output token diagnostics
-
-The ChatGPT endpoint requires `store: false`. Continuation therefore remains connection-scoped. A dead socket falls back to a full request with the same stable cache key.
+Inference continues if the control UI is unavailable. The router does not modify Grok Bot transcripts, profiles, native tools, or permissions.
 
 ## Remove
-
-Stop the router service, restore the pristine host backup, and restart through Sand's supervisor:
 
 ```bash
 grok-codex-router service-stop
 cp ~/sand-host/host-main.cjs.grok-codex-router-bak ~/sand-host/host-main.cjs
 grok-codex-router restart-host
 ```
-
-The router does not modify Grok Bot transcripts, profiles, tools, or permissions.

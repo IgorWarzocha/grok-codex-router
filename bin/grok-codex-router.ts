@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { discoverAgents, resolveAgent } from "../src/agents.js";
@@ -155,7 +156,7 @@ async function verify(identity?: string): Promise<void> {
 function status(): void {
   const config = loadConfig();
   const auth = credentialStatus(config.authStore);
-  const host = path.join(process.env.SAND_HOST_DIR || path.join(process.env.HOME || "/home/box", "sand-host"), "host-main.cjs");
+  const host = path.join(process.env.SAND_HOST_DIR || path.join(os.homedir(), "sand-host"), "host-main.cjs");
   const patched = fs.existsSync(host) && fs.readFileSync(host, "utf8").includes("GROK_CODEX_ROUTER_SESSION_START");
   const service = controlServiceStatus();
   console.log("config\t" + configPath());
