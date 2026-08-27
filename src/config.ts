@@ -3,6 +3,8 @@ import os from "node:os";
 import path from "node:path";
 
 export type ReasoningEffort = "off" | "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+const CONTEXT_WINDOW_OPTIONS = [272_000, 472_000, 872_000] as const;
+export type ContextWindowTokens = typeof CONTEXT_WINDOW_OPTIONS[number];
 type TransportMode = "cached-websocket" | "websocket" | "sse";
 type WorkloadClass = "agent" | "summarization" | "subagent" | "browser" | "computer" | "automation" | "group";
 type RoutedWorkload = Exclude<WorkloadClass, "agent">;
@@ -20,6 +22,7 @@ export interface ResolvedRoute extends Route {
 export interface RouterConfig {
   version: 1;
   authStore: "pi" | "codex";
+  contextWindowTokens: ContextWindowTokens;
   default: Route;
   agents: Record<string, Route>;
   classes: Record<RoutedWorkload, Route>;
@@ -43,6 +46,7 @@ export interface SandSessionOptions {
 export const DEFAULT_CONFIG = Object.freeze<RouterConfig>({
   version: 1,
   authStore: "pi",
+  contextWindowTokens: 272_000,
   default: { model: "gpt-5.6-sol", reasoningEffort: "high" },
   agents: {},
   classes: {
@@ -60,6 +64,7 @@ export const DEFAULT_CONFIG = Object.freeze<RouterConfig>({
 });
 
 const EFFORTS = new Set<ReasoningEffort>(["off", "none", "minimal", "low", "medium", "high", "xhigh", "max"]);
+const CONTEXT_WINDOWS = new Set<number>(CONTEXT_WINDOW_OPTIONS);
 const TRANSPORTS = new Set<TransportMode>(["cached-websocket", "websocket", "sse"]);
 
 export function configPath(): string {
@@ -81,6 +86,19 @@ function validateRoute(route: unknown, label: string): Route {
     throw new Error(`${label}.reasoningEffort must be one of ${[...EFFORTS].join(", ")}`);
   }
   return { model: route["model"].trim(), reasoningEffort: effort as ReasoningEffort };
+}
+
+export function parseContextWindow(value: unknown): ContextWindowTokens {
+  const normalized = typeof value === "string"
+    ? value.trim().toLowerCase().replace(/,/g, "")
+    : value;
+  const tokens = typeof normalized === "string" && normalized.endsWith("k")
+    ? Number(normalized.slice(0, -1)) * 1_000
+    : Number(normalized);
+  if (!CONTEXT_WINDOWS.has(tokens)) {
+    throw new Error("contextWindowTokens must be 272000, 472000, or 872000");
+  }
+  return tokens as ContextWindowTokens;
 }
 
 export function validateConfig(raw: unknown): RouterConfig {
@@ -111,6 +129,7 @@ export function validateConfig(raw: unknown): RouterConfig {
   return {
     version: 1,
     authStore: raw.authStore,
+    contextWindowTokens: parseContextWindow(raw.contextWindowTokens ?? DEFAULT_CONFIG.contextWindowTokens),
     default: validateRoute(raw.default, "default"),
     agents,
     classes,

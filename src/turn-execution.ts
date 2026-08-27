@@ -5,7 +5,7 @@ import {
 } from "./config.js";
 import { recordEvent } from "./event-log.js";
 import { getCredentials } from "./oauth.js";
-import type { RouterResult } from "./response.js";
+import { reportContextWindow, type RouterResult } from "./response.js";
 import type { CodexTurnState } from "./turn-state.js";
 import { runTransport } from "./transport.js";
 import { buildRequest } from "./wire.js";
@@ -41,15 +41,18 @@ export async function executeCodexTurn(options: {
     reasoningEffort: route.reasoningEffort
   });
   const startedAt = Date.now();
-  const result = await runTransport({
-    body,
-    credentials,
-    sessionId,
-    invocationId,
-    config,
-    turnState,
-    signal
-  });
+  const result = reportContextWindow(
+    await runTransport({
+      body,
+      credentials,
+      sessionId,
+      invocationId,
+      config,
+      turnState,
+      signal
+    }),
+    config.contextWindowTokens
+  );
   recordEvent({
     type: "turn",
     sessionId,

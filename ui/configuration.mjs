@@ -14,6 +14,11 @@ const MODEL_CATALOG = [
   { id: "gpt-5.6-luna", label: "GPT-5.6 Luna" },
   { id: "gpt-5.6-terra", label: "GPT-5.6 Terra" }
 ];
+const CONTEXT_WINDOWS = [
+  { tokens: 272_000, label: "272k" },
+  { tokens: 472_000, label: "472k" },
+  { tokens: 872_000, label: "872k" }
+];
 const TASK_LABELS = {
   summarization: "Summarization",
   subagent: "Subagents",
@@ -156,6 +161,21 @@ function renderRoutes(state) {
   }
   authLabel.append(auth);
 
+  const contextLabel = document.createElement("label");
+  contextLabel.textContent = "Context window";
+  const contextWindow = document.createElement("select");
+  contextWindow.name = "context-window";
+  contextWindow.disabled = state.config.contextWindowTokens === undefined;
+  const selectedContextWindow = state.config.contextWindowTokens || 272_000;
+  for (const available of CONTEXT_WINDOWS) {
+    const option = document.createElement("option");
+    option.value = String(available.tokens);
+    option.textContent = available.label;
+    option.selected = selectedContextWindow === available.tokens;
+    contextWindow.append(option);
+  }
+  contextLabel.append(contextWindow);
+
   const modeLabel = document.createElement("label");
   modeLabel.textContent = "Connection mode";
   const mode = document.createElement("select");
@@ -178,7 +198,7 @@ function renderRoutes(state) {
   retries.max = "20";
   retries.value = state.config.transport.maxRetries;
   retriesLabel.append(retries);
-  settings.append(authLabel, modeLabel, retriesLabel);
+  settings.append(authLabel, contextLabel, modeLabel, retriesLabel);
 }
 
 function collectConfig(baseConfig) {
@@ -206,6 +226,10 @@ function collectConfig(baseConfig) {
     };
   }
   config.authStore = form.elements["auth-store"].value;
+  const contextWindow = form.elements["context-window"];
+  if (!contextWindow.disabled) {
+    config.contextWindowTokens = Number(contextWindow.value);
+  }
   config.transport = {
     mode: form.elements["transport-mode"].value,
     maxRetries: Number(form.elements["max-retries"].value)

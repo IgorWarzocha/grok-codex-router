@@ -88,6 +88,7 @@ export function issueReport(): string {
     "- Control service: " + (service.running ? "running" : "stopped"),
     "- Sand supervisor: " + supervisor,
     "- OAuth store health: " + auth,
+    "- Context window: " + config.contextWindowTokens / 1_000 + "k",
     "- Node: " + process.version,
     "- Bun: " + commandVersion("/usr/local/bin/bun", ["--version"]),
     "- Platform: " + process.platform + " " + process.arch,

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { convertMessages } from "../src/message-wire.js";
-import { ResponseAccumulator } from "../src/response.js";
+import { reportContextWindow, ResponseAccumulator } from "../src/response.js";
 import { convertTools } from "../src/tool-wire.js";
 import { buildRequest } from "../src/wire.js";
 
@@ -175,4 +175,12 @@ test("Responses events preserve tool identity and provider cache usage", () => {
   assert.equal((next.input[1] as Record<string, unknown>)["call_id"], "call_1");
   assert.equal(result.extendedUsage.inputTokens, 20);
   assert.equal(result.extendedUsage.cacheReadTokens, 80);
+  const reported = reportContextWindow({
+    ...result,
+    transport: "websocket",
+    continuation: "delta",
+    socketReused: true
+  }, 872_000);
+  assert.equal(reported.extendedUsage.maxTokens, 872_000);
+  assert.equal(result.extendedUsage.maxTokens, 0);
 });

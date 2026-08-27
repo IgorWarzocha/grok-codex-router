@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { DEFAULT_CONFIG, resolveRoute, validateConfig } from "../src/config.js";
+import { DEFAULT_CONFIG, parseContextWindow, resolveRoute, validateConfig } from "../src/config.js";
 import { executorSessionIdFor } from "../src/session.js";
 
 test("root agents route by immutable ID while workload classes stay explicit", () => {
@@ -42,4 +42,20 @@ test("auxiliary executors cannot replace the root turn continuation lane", () =>
   assert.match(executorSessionIdFor(root, 1), /:aux:1$/);
   assert.notEqual(executorSessionIdFor(root, 2), executorSessionIdFor(root, 1));
   assert.notEqual(executorSessionIdFor(root, 1), root);
+});
+
+test("context windows accept only the supported effective token budgets", () => {
+  assert.equal(parseContextWindow("272k"), 272_000);
+  assert.equal(parseContextWindow("472000"), 472_000);
+  assert.equal(parseContextWindow(872_000), 872_000);
+  assert.throws(() => parseContextWindow("1m"), /272000, 472000, or 872000/);
+
+  const config = validateConfig({
+    ...structuredClone(DEFAULT_CONFIG),
+    contextWindowTokens: 472_000
+  });
+  assert.equal(config.contextWindowTokens, 472_000);
+
+  const { contextWindowTokens: _omitted, ...priorConfig } = structuredClone(DEFAULT_CONFIG);
+  assert.equal(validateConfig(priorConfig).contextWindowTokens, 272_000);
 });

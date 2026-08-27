@@ -7,6 +7,7 @@ import {
   type JsonObject
 } from "./sand-values.js";
 import { assistantMessageItem } from "./message-wire.js";
+import type { ContextWindowTokens } from "./config.js";
 
 export interface StreamEvent extends JsonObject {
   type?: string;
@@ -64,6 +65,19 @@ export type TransportResult = RouterResult & {
   continuation: string;
   socketReused: boolean;
 };
+
+export function reportContextWindow(
+  result: TransportResult,
+  maxTokens: ContextWindowTokens
+): TransportResult {
+  return {
+    ...result,
+    extendedUsage: {
+      ...result.extendedUsage,
+      maxTokens
+    }
+  };
+}
 
 function usageFromResponse(response: ProviderResponse | undefined): NormalizedUsage {
   const usage = isRecord(response?.usage) ? response.usage : {};
