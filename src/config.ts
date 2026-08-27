@@ -5,6 +5,8 @@ import path from "node:path";
 export type ReasoningEffort = "off" | "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
 const CONTEXT_WINDOW_OPTIONS = [272_000, 472_000, 872_000] as const;
 export type ContextWindowTokens = typeof CONTEXT_WINDOW_OPTIONS[number];
+export const ROUTER_MODELS = ["gpt-5.6-sol", "gpt-5.6-luna", "gpt-5.6-terra"] as const;
+export type RouterModel = typeof ROUTER_MODELS[number];
 type TransportMode = "cached-websocket" | "websocket" | "sse";
 type WorkloadClass = "agent" | "summarization" | "subagent" | "browser" | "computer" | "automation" | "group";
 type RoutedWorkload = Exclude<WorkloadClass, "agent">;
@@ -22,7 +24,7 @@ export interface ResolvedRoute extends Route {
 export interface RouterConfig {
   version: 1;
   authStore: "pi" | "codex";
-  contextWindowTokens: ContextWindowTokens;
+  contextWindows: Record<RouterModel, ContextWindowTokens>;
   default: Route;
   agents: Record<string, Route>;
   classes: Record<RoutedWorkload, Route>;
@@ -46,7 +48,11 @@ export interface SandSessionOptions {
 export const DEFAULT_CONFIG = Object.freeze<RouterConfig>({
   version: 1,
   authStore: "pi",
-  contextWindowTokens: 272_000,
+  contextWindows: {
+    "gpt-5.6-sol": 272_000,
+    "gpt-5.6-luna": 272_000,
+    "gpt-5.6-terra": 272_000
+  },
   default: { model: "gpt-5.6-sol", reasoningEffort: "high" },
   agents: {},
   classes: {
@@ -101,6 +107,11 @@ export function parseContextWindow(value: unknown): ContextWindowTokens {
   return tokens as ContextWindowTokens;
 }
 
+export function contextWindowForModel(config: RouterConfig, model: string): ContextWindowTokens {
+  const configuredModel = ROUTER_MODELS.find((candidate) => candidate === model);
+  return configuredModel ? config.contextWindows[configuredModel] : 272_000;
+}
+
 export function validateConfig(raw: unknown): RouterConfig {
   if (!isRecord(raw)) throw new Error("router config must be an object");
   if (raw.version !== 1) throw new Error("router config version must be 1");
@@ -126,10 +137,20 @@ export function validateConfig(raw: unknown): RouterConfig {
   if (!Number.isInteger(maxRetries) || maxRetries < 0 || maxRetries > 20) {
     throw new Error("transport.maxRetries must be an integer from 0 to 20");
   }
+  const legacyContextWindow = parseContextWindow(
+    raw.contextWindowTokens ?? DEFAULT_CONFIG.contextWindows["gpt-5.6-sol"]
+  );
+  const rawContextWindows = isRecord(raw.contextWindows) ? raw.contextWindows : {};
+  const contextWindows = Object.fromEntries(
+    ROUTER_MODELS.map((model) => [
+      model,
+      parseContextWindow(rawContextWindows[model] ?? legacyContextWindow)
+    ])
+  ) as Record<RouterModel, ContextWindowTokens>;
   return {
     version: 1,
     authStore: raw.authStore,
-    contextWindowTokens: parseContextWindow(raw.contextWindowTokens ?? DEFAULT_CONFIG.contextWindowTokens),
+    contextWindows,
     default: validateRoute(raw.default, "default"),
     agents,
     classes,

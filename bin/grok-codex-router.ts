@@ -9,8 +9,10 @@ import {
   DEFAULT_CONFIG,
   loadConfig,
   parseContextWindow,
+  ROUTER_MODELS,
   writeConfig,
   type ReasoningEffort,
+  type RouterModel,
   type RouterConfig
 } from "../src/config.js";
 import { controlServiceStatus, ensureControlService, restartControlService, stopControlService } from "../src/control-service.js";
@@ -94,9 +96,18 @@ function setAuthStore(value: string | undefined): void {
   console.log("wrote " + writeConfig(config));
 }
 
-function setContextWindow(value: string | undefined): void {
+function routerModel(value: string | undefined): RouterModel {
+  const normalized = String(value || "").toLowerCase();
+  const model = ROUTER_MODELS.find((candidate) =>
+    candidate === normalized || candidate.endsWith("-" + normalized)
+  );
+  if (!model) throw new Error("model must be sol, luna, or terra");
+  return model;
+}
+
+function setContextWindow(modelValue: string | undefined, windowValue: string | undefined): void {
   const config = loadConfig();
-  config.contextWindowTokens = parseContextWindow(value);
+  config.contextWindows[routerModel(modelValue)] = parseContextWindow(windowValue);
   console.log("wrote " + writeConfig(config));
 }
 
@@ -177,7 +188,12 @@ function status(): void {
   console.log("auth\t" + auth.store + "\tvalid " + Math.floor(auth.validForMs / 60000) + "m");
   console.log("host patch\t" + (patched ? "installed" : "missing"));
   console.log("control service\t" + (service.running ? "running" : "stopped") + "\t" + service.url);
-  console.log("context window\t" + config.contextWindowTokens / 1_000 + "k");
+  console.log(
+    "context windows\t" +
+    ROUTER_MODELS.map((model) =>
+      model.slice("gpt-5.6-".length) + "=" + config.contextWindows[model] / 1_000 + "k"
+    ).join("\t")
+  );
   printRoutes();
 }
 
@@ -196,7 +212,7 @@ function help(): void {
     "  agents",
     "  routes",
     "  auth-store pi|codex",
-    "  context-window 272k|472k|872k",
+    "  context-window sol|luna|terra 272k|472k|872k",
     "  default MODEL EFFORT",
     "  route AGENT MODEL EFFORT",
     "  class CLASS MODEL EFFORT",
@@ -218,7 +234,7 @@ async function main(): Promise<void> {
   else if (command === "agents") printAgents();
   else if (command === "routes") printRoutes();
   else if (command === "auth-store") setAuthStore(values[0]);
-  else if (command === "context-window") setContextWindow(values[0]);
+  else if (command === "context-window") setContextWindow(values[0], values[1]);
   else if (command === "status") status();
   else if (command === "default") setRoute("default", values);
   else if (command === "route") setRoute("agent", values);

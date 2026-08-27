@@ -1,4 +1,5 @@
 import {
+  contextWindowForModel,
   loadConfig,
   resolveRoute,
   type SandSessionOptions
@@ -51,7 +52,7 @@ export async function executeCodexTurn(options: {
       turnState,
       signal
     }),
-    config.contextWindowTokens
+    contextWindowForModel(config, route.model)
   );
   recordEvent({
     type: "turn",

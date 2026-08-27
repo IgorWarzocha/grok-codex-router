@@ -47,7 +47,7 @@ Agent settings are stored against immutable profile IDs. Renaming an agent does 
 
 The UI offers GPT-5.6 Sol, Luna, and Terra. An agent can inherit the complete default route or override both model and reasoning effort.
 
-Settings offers effective context windows of 272k, 472k, and 872k tokens. The router reports the selected window to Grok Bot so native compaction uses the same budget. It does not send an unsupported context-limit field to Codex. The default is 272k.
+Settings gives Sol, Luna, and Terra independent effective context windows of 272k, 472k, or 872k tokens. The router reports the selected model's window to Grok Bot so native compaction uses the same budget. It does not send an unsupported context-limit field to Codex. Each model defaults to 272k.
 
 ## Choose a transport
 
@@ -113,7 +113,7 @@ grok-codex-router routes
 grok-codex-router route "Agent Name" gpt-5.6-sol high
 grok-codex-router class summarization gpt-5.6-luna medium
 grok-codex-router auth-store pi
-grok-codex-router context-window 472k
+grok-codex-router context-window luna 472k
 grok-codex-router recover
 ```
 

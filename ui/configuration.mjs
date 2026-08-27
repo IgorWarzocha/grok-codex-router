@@ -161,20 +161,25 @@ function renderRoutes(state) {
   }
   authLabel.append(auth);
 
-  const contextLabel = document.createElement("label");
-  contextLabel.textContent = "Context window";
-  const contextWindow = document.createElement("select");
-  contextWindow.name = "context-window";
-  contextWindow.disabled = state.config.contextWindowTokens === undefined;
-  const selectedContextWindow = state.config.contextWindowTokens || 272_000;
-  for (const available of CONTEXT_WINDOWS) {
-    const option = document.createElement("option");
-    option.value = String(available.tokens);
-    option.textContent = available.label;
-    option.selected = selectedContextWindow === available.tokens;
-    contextWindow.append(option);
-  }
-  contextLabel.append(contextWindow);
+  const contextLabels = MODEL_CATALOG.map((model) => {
+    const label = document.createElement("label");
+    label.textContent = model.label + " context";
+    const input = document.createElement("select");
+    input.name = "context-window-" + model.id;
+    input.disabled = state.config.contextWindows === undefined;
+    const selected = state.config.contextWindows?.[model.id] ||
+      state.config.contextWindowTokens ||
+      272_000;
+    for (const available of CONTEXT_WINDOWS) {
+      const option = document.createElement("option");
+      option.value = String(available.tokens);
+      option.textContent = available.label;
+      option.selected = selected === available.tokens;
+      input.append(option);
+    }
+    label.append(input);
+    return label;
+  });
 
   const modeLabel = document.createElement("label");
   modeLabel.textContent = "Connection mode";
@@ -198,7 +203,7 @@ function renderRoutes(state) {
   retries.max = "20";
   retries.value = state.config.transport.maxRetries;
   retriesLabel.append(retries);
-  settings.append(authLabel, contextLabel, modeLabel, retriesLabel);
+  settings.append(authLabel, modeLabel, retriesLabel, ...contextLabels);
 }
 
 function collectConfig(baseConfig) {
@@ -226,9 +231,15 @@ function collectConfig(baseConfig) {
     };
   }
   config.authStore = form.elements["auth-store"].value;
-  const contextWindow = form.elements["context-window"];
-  if (!contextWindow.disabled) {
-    config.contextWindowTokens = Number(contextWindow.value);
+  const contextInputs = MODEL_CATALOG.map((model) => ({
+    model: model.id,
+    input: form.elements["context-window-" + model.id]
+  }));
+  if (contextInputs.every(({ input }) => !input.disabled)) {
+    config.contextWindows = Object.fromEntries(
+      contextInputs.map(({ model, input }) => [model, Number(input.value)])
+    );
+    delete config.contextWindowTokens;
   }
   config.transport = {
     mode: form.elements["transport-mode"].value,

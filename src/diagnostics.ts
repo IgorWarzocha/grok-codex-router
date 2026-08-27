@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { loadConfig } from "./config.js";
+import { loadConfig, ROUTER_MODELS } from "./config.js";
 import { controlServiceStatus } from "./control-service.js";
 import { credentialStatus } from "./oauth.js";
 import { readSupervisorStatus } from "./sand-supervisor.js";
@@ -88,7 +88,9 @@ export function issueReport(): string {
     "- Control service: " + (service.running ? "running" : "stopped"),
     "- Sand supervisor: " + supervisor,
     "- OAuth store health: " + auth,
-    "- Context window: " + config.contextWindowTokens / 1_000 + "k",
+    "- Context windows: " + ROUTER_MODELS.map((model) =>
+      model.slice("gpt-5.6-".length) + "=" + config.contextWindows[model] / 1_000 + "k"
+    ).join(", "),
     "- Node: " + process.version,
     "- Bun: " + commandVersion("/usr/local/bin/bun", ["--version"]),
     "- Platform: " + process.platform + " " + process.arch,
