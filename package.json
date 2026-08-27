@@ -1,0 +1,27 @@
+{
+  "name": "grok-codex-router",
+  "version": "0.1.0",
+  "description": "First-party Codex Responses transport and per-agent model router for Grok Bot",
+  "type": "commonjs",
+  "main": "dist/src/session.js",
+  "bin": {
+    "grok-codex-router": "dist/bin/grok-codex-router.js"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc -p tsconfig.json && chmod +x dist/bin/grok-codex-router.js dist/scripts/*.js",
+    "check": "npm run build && node --test dist/tests/*.test.js",
+    "test": "node --test dist/tests/*.test.js"
+  },
+  "dependencies": {
+    "ws": "8.21.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "@types/ws": "8.18.1",
+    "typescript": "7.0.2"
+  },
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "license": "MIT"
+}
