@@ -6,6 +6,8 @@ import path from "node:path";
 
 const START = "/* GROK_CODEX_ROUTER_SESSION_START */";
 const END = "/* GROK_CODEX_ROUTER_SESSION_END */";
+const SERVICE_START = "/* GROK_CODEX_ROUTER_SERVICE_START */";
+const SERVICE_END = "/* GROK_CODEX_ROUTER_SERVICE_END */";
 const hostDir = process.env.SAND_HOST_DIR || path.join(os.homedir(), "sand-host");
 const hostFile = path.join(hostDir, "host-main.cjs");
 const backupFile = path.join(hostDir, "host-main.cjs.grok-codex-router-bak");
@@ -26,6 +28,32 @@ if (!fs.existsSync(routerEntry)) fail("missing compiled router entry " + routerE
 const originalSource = fs.readFileSync(hostFile, "utf8");
 let source = originalSource;
 let backupSource = originalSource;
+if ((source.includes(SERVICE_START) || source.includes(START)) && !fs.existsSync(backupFile)) {
+  fail("router hook exists but its pristine host backup is missing");
+}
+
+const firstLineEnd = source.indexOf("\n");
+if (firstLineEnd < 0 || !source.startsWith("const __mod=require('node:module');")) {
+  fail("unfamiliar Sand host bundle prelude");
+}
+const serviceHook = [
+  SERVICE_START,
+  "try {",
+  '  const __grokCodexRouterHome = process.env.SAND_CODEX_ROUTER_HOME || require("path").join(require("os").homedir(), "grok-codex-router");',
+  "  require(__grokCodexRouterHome).ensureControlService();",
+  "} catch (__grokCodexRouterServiceError) {",
+  '  console.error("[grok-codex-router] control service start failed: " + String(__grokCodexRouterServiceError && __grokCodexRouterServiceError.message || __grokCodexRouterServiceError));',
+  "}",
+  SERVICE_END
+].join("\n");
+const serviceInstalled = source.includes(SERVICE_START);
+if (!serviceInstalled) {
+  if (source.slice(firstLineEnd + 1, firstLineEnd + 14) !== '"use strict";') {
+    fail("unfamiliar Sand host bundle prelude");
+  }
+} else if (!source.slice(firstLineEnd + 1).startsWith(serviceHook + '\n"use strict";')) {
+  fail("installed control service hook has an unfamiliar shape");
+}
 
 const oldHookStart = '      const inferenceProvider = (process.env.SAND_INFERENCE_PROVIDER || "xai").toLowerCase();';
 const cursorAnchor = "      const session = createCursorInferencePromptSession({";
@@ -57,8 +85,10 @@ if (!source.includes(START)) {
     if (count(source, cursorAnchor) !== 1) fail("expected one Cursor session anchor");
     source = source.replace(cursorAnchor, routerHook + "\n" + cursorAnchor);
   }
-} else if (!fs.existsSync(backupFile)) {
-  fail("router hook exists but its pristine host backup is missing");
+}
+
+if (!serviceInstalled) {
+  source = source.slice(0, firstLineEnd + 1) + serviceHook + "\n" + source.slice(firstLineEnd + 1);
 }
 
 const mainAnchor = [
@@ -99,6 +129,7 @@ if (!summary.includes(summaryIdentity)) {
   source = source.slice(0, summaryStart) + summary + source.slice(summaryEnd);
 }
 
+if (count(source, SERVICE_START) !== 1 || count(source, SERVICE_END) !== 1) fail("service hook markers are not unique");
 if (count(source, START) !== 1 || count(source, END) !== 1) fail("router hook markers are not unique");
 if (count(source, "          conversationId,") < 2) fail("conversation identity propagation is incomplete");
 if (checkOnly) {

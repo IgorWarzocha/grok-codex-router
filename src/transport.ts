@@ -38,6 +38,7 @@ interface AcquiredLane {
 type TransportResult = RouterResult & {
   transport: "websocket" | "sse";
   continuation: string;
+  socketReused: boolean;
 };
 
 type RouterError = Error & {
@@ -253,7 +254,7 @@ async function websocketAttempt(
       reconstructedItems: result.reconstructedItems
     };
     keep = true;
-    return { ...result, transport: "websocket", continuation: continuation.decision };
+    return { ...result, transport: "websocket", continuation: continuation.decision, socketReused: acquired.reused };
   } catch (error: unknown) {
     acquired.lane.continuation = undefined;
     throw error;
@@ -325,7 +326,7 @@ async function sseAttempt(
   });
   const response = await openSSE(body, credentials, sessionId, signal);
   const result = await collect(parseSSE(response, signal, idleTimeoutMs), body.model, invocationId);
-  return { ...result, transport: "sse", continuation: "disabled" };
+  return { ...result, transport: "sse", continuation: "disabled", socketReused: false };
 }
 
 export async function runTransport(options: {
@@ -352,7 +353,6 @@ export async function runTransport(options: {
           config.transport.idleTimeoutMs,
           signal
         );
-        diagnosticUsage(result, sessionId, body.model);
         if (preferred === "websocket") closeSession(sessionId);
         return result;
       } catch (error: unknown) {
@@ -378,7 +378,6 @@ export async function runTransport(options: {
   for (let attempt = 0; attempt <= config.transport.maxRetries; attempt++) {
     try {
       const result = await sseAttempt(body, credentials, sessionId, invocationId, config.transport.idleTimeoutMs, signal);
-      diagnosticUsage(result, sessionId, body.model);
       return result;
     } catch (error: unknown) {
       lastError = error instanceof Error ? error as RouterError : new Error(String(error));
@@ -392,20 +391,6 @@ export async function runTransport(options: {
     }
   }
   throw lastError || new Error("Codex transport failed");
-}
-
-function diagnosticUsage(result: TransportResult, sessionId: string, model: string): void {
-  diagnostic({
-    type: "usage",
-    transport: result.transport,
-    model,
-    sessionId,
-    inputTokens: result.extendedUsage.inputTokens,
-    cachedInputTokens: result.extendedUsage.cacheReadTokens,
-    cacheWriteInputTokens: result.extendedUsage.cacheWriteTokens,
-    outputTokens: result.extendedUsage.outputTokens,
-    continuation: result.continuation
-  });
 }
 
 export function closeSession(sessionId: string): void {

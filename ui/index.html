@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="grok-codex-router-token" content="__CONTROL_TOKEN__">
+  <title>Grok Codex Router</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <div>
+      <p class="product-mark">GCR</p>
+      <h1>Grok Codex Router</h1>
+      <p class="subtitle">Native Grok Bot loop. Codex transport. Your routes.</p>
+    </div>
+    <div id="service-clock" class="service-clock" aria-live="polite">Connecting</div>
+  </header>
+
+  <main>
+    <section aria-labelledby="connection-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="connection-title">Inference path</h2>
+          <p id="host-message">Checking the Sand host.</p>
+        </div>
+        <button id="refresh" class="quiet-button" type="button">Refresh</button>
+      </div>
+      <ol class="topology" aria-label="Inference path status">
+        <li><span class="node-label">Grok Bot</span><strong id="host-status">Checking</strong></li>
+        <li><span class="node-label">Router</span><strong id="router-status">Checking</strong></li>
+        <li><span class="node-label">ChatGPT OAuth</span><strong id="auth-status">Checking</strong></li>
+      </ol>
+    </section>
+
+    <section aria-labelledby="usage-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="usage-title">Retained usage</h2>
+          <p>Sanitized request records stored on this VM.</p>
+        </div>
+      </div>
+      <dl class="metrics">
+        <div><dt>Turns</dt><dd id="metric-turns">0</dd></div>
+        <div><dt>Fresh input</dt><dd id="metric-input">0</dd></div>
+        <div><dt>Cached input</dt><dd id="metric-cached">0</dd></div>
+        <div><dt>Output</dt><dd id="metric-output">0</dd></div>
+        <div><dt>Cache share</dt><dd id="metric-cache-rate">0%</dd></div>
+        <div><dt>Inference time</dt><dd id="metric-duration">0s</dd></div>
+      </dl>
+      <div class="table-wrap">
+        <table>
+          <caption>Usage by agent and model</caption>
+          <thead><tr><th scope="col">Agent</th><th scope="col">Model</th><th scope="col">Turns</th><th scope="col">Fresh</th><th scope="col">Cached</th><th scope="col">Output</th></tr></thead>
+          <tbody id="usage-by-agent"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="routing-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="routing-title">Routing</h2>
+          <p>Profiles are discovered live. Names stay readable, immutable IDs stay authoritative.</p>
+        </div>
+        <button id="save-routes" class="primary-button" type="button">Save settings</button>
+      </div>
+      <form id="routing-form">
+        <fieldset>
+          <legend>Default route</legend>
+          <div id="default-route" class="route-grid"></div>
+        </fieldset>
+        <fieldset>
+          <legend>Agents</legend>
+          <div class="table-wrap">
+            <table class="route-table">
+              <thead><tr><th scope="col">Agent</th><th scope="col">Override</th><th scope="col">Model</th><th scope="col">Reasoning</th></tr></thead>
+              <tbody id="agent-routes"></tbody>
+            </table>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Grok Bot workloads</legend>
+          <div class="table-wrap">
+            <table class="route-table">
+              <thead><tr><th scope="col">Workload</th><th scope="col">Model</th><th scope="col">Reasoning</th></tr></thead>
+              <tbody id="class-routes"></tbody>
+            </table>
+          </div>
+        </fieldset>
+        <details>
+          <summary>Transport and OAuth</summary>
+          <div id="transport-settings" class="route-grid advanced-settings"></div>
+        </details>
+      </form>
+      <p id="save-status" class="form-status" role="status"></p>
+    </section>
+
+    <section aria-labelledby="activity-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="activity-title">Activity</h2>
+          <p>Prompts, tool arguments, authorization headers, and credentials are never retained here.</p>
+        </div>
+      </div>
+      <div class="table-wrap activity-wrap">
+        <table>
+          <thead><tr><th scope="col">Time</th><th scope="col">Event</th><th scope="col">Route</th><th scope="col">Transport</th><th scope="col">Detail</th></tr></thead>
+          <tbody id="activity-log"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section aria-labelledby="recovery-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="recovery-title">Recovery</h2>
+          <p>Compatible Sand updates are patched automatically and restarted through the native idle-aware supervisor.</p>
+        </div>
+      </div>
+      <div class="recovery-actions">
+        <button id="recover" class="quiet-button" type="button">Check and recover</button>
+        <button id="restart" class="danger-button" type="button">Restart Sand host</button>
+        <button id="copy-report" class="quiet-button" type="button">Copy issue report</button>
+        <a id="issue-link" class="text-link" href="https://github.com/IgorWarzocha/grok-codex-router/issues/new" target="_blank" rel="noreferrer">Open GitHub issue</a>
+      </div>
+      <p id="action-status" class="form-status" role="status"></p>
+    </section>
+  </main>
+
+  <datalist id="known-models"></datalist>
+</body>
+</html>

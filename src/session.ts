@@ -1,5 +1,6 @@
 import crypto from "node:crypto";
 import { loadConfig, resolveRoute, type ResolvedRoute, type SandSessionOptions } from "./config.js";
+export { ensureControlService } from "./control-service.js";
 import { getCredentials } from "./oauth.js";
 import { runTransport, diagnostic } from "./transport.js";
 import { type NormalizedUsage, type RouterResult, type StreamPart } from "./response.js";
@@ -136,7 +137,8 @@ export function createExecutor(
             model: route.model,
             reasoningEffort: route.reasoningEffort
           });
-          return await runTransport({
+          const startedAt = Date.now();
+          const result = await runTransport({
             body,
             credentials,
             sessionId: executorSessionId,
@@ -144,6 +146,23 @@ export function createExecutor(
             config,
             signal: ctx && ctx.signal
           });
+          diagnostic({
+            type: "turn",
+            sessionId: executorSessionId,
+            agentId: route.agentId,
+            workload: route.workload,
+            model: route.model,
+            reasoningEffort: route.reasoningEffort,
+            transport: result.transport,
+            continuation: result.continuation,
+            socketReused: result.socketReused,
+            inputTokens: result.extendedUsage.inputTokens,
+            cachedInputTokens: result.extendedUsage.cacheReadTokens,
+            cacheWriteInputTokens: result.extendedUsage.cacheWriteTokens,
+            outputTokens: result.extendedUsage.outputTokens,
+            durationMs: Date.now() - startedAt
+          });
+          return result;
         } catch (error) {
           return errorResult(session.route.model, invocationId, error);
         }

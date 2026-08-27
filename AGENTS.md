@@ -1,7 +1,7 @@
-- Treat `src/` as canonical. Never patch `dist/`, `node_modules/`, or the installed Sand bundle by hand.
+- Treat `src/`, `control/`, `scripts/`, `bin/`, and `ui/` as canonical. Never patch `dist/`, `node_modules/`, or the installed Sand bundle by hand.
 - Preserve the first-party Codex Responses contract and cached-prefix identity. Load applicable OAuth, prompt-caching, extension, review, and dependency guidance before changing transport or the host patch.
 - `scripts/patch-host.ts` is the only host mutation owner. Unknown or repeated anchors must fail closed.
 - Route root turns by immutable `conversationId`. Keep summarization, subagent, browser, computer, automation, and group policy explicit.
 - Never log credentials, prompts, message bodies, tool arguments, authorization headers, or OAuth callback material.
 - Verify changed wire contracts with `npm run check`, then a direct tool round-trip and one native Grok Bot turn.
-- Keep `skills/grok-codex-router/SKILL.md` aligned with recovery and verification behavior.
+- Keep `.agents/skills/grok-codex-router/` aligned with installation, automatic recovery, issue reporting, and verification behavior.

@@ -16,5 +16,5 @@
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts", "bin/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"]
+  "include": ["src/**/*.ts", "bin/**/*.ts", "control/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"]
 }
