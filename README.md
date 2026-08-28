@@ -37,13 +37,13 @@ http://127.0.0.1:21371
 The UI is the normal management surface.
 
 - **Default** sets the model and reasoning used by ordinary agents.
-- **Agents** adds an override for one discovered Grok Bot profile.
+- **Agents** adds an override for one discovered individual Grok Bot profile. Chat rooms are excluded.
 - **Task models** controls summarization, subagents, browser use, computer use, automations, and group turns.
 - **Settings** selects the authenticated local account and transport mode.
 - **Stats** shows token use, prompt-cache reads, inference time, and failures by agent.
 - **Activity** shows sanitized recent routing and transport events.
 
-Agent settings are stored against immutable profile IDs. Renaming an agent does not break its route.
+Agent settings are stored against immutable profile IDs. Renaming an agent does not break its route. Agents speaking inside a chat room use the separate **Group turns** setting.
 
 The UI offers GPT-5.6 Sol, Luna, and Terra. An agent can inherit the complete default route or override both model and reasoning effort.
 

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
-import { discoverAgents } from "../src/agents.js";
+import { discoverProfiles } from "../src/agents.js";
 import { loadConfig, validateConfig, writeConfig } from "../src/config.js";
 import { controlPort, controlUrl } from "../src/control-address.js";
 import { issueReport } from "../src/diagnostics.js";
@@ -61,12 +61,16 @@ function text(response: http.ServerResponse, status: number, value: string, cont
 
 function state(): Record<string, unknown> {
   const config = loadConfig();
-  const discovered = discoverAgents();
+  const profiles = discoverProfiles();
+  const discovered = profiles
+    .filter((profile) => profile.kind === "agent")
+    .map(({ id, name }) => ({ id, name }));
   const names = new Map(discovered.map((agent) => [agent.id, agent.name]));
+  const roomIds = new Set(profiles.filter((profile) => profile.kind === "room").map((room) => room.id));
   const agents = [
     ...discovered.map((agent) => ({ ...agent, available: true })),
     ...Object.keys(config.agents)
-      .filter((id) => !names.has(id))
+      .filter((id) => !names.has(id) && !roomIds.has(id))
       .map((id) => ({ id, name: "Unavailable profile", available: false }))
   ];
   let auth: Record<string, unknown>;

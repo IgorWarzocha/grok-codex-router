@@ -7,24 +7,37 @@ export interface GrokAgent {
   name: string;
 }
 
+export interface GrokProfile extends GrokAgent {
+  kind: "agent" | "room";
+}
+
 function agentsRoot(): string {
   return path.join(process.env.SAND_DATA_ROOT || path.join(os.homedir(), "sand-data"), "agents");
 }
 
-export function discoverAgents(root = agentsRoot()): GrokAgent[] {
+export function discoverProfiles(root = agentsRoot()): GrokProfile[] {
   if (!fs.existsSync(root)) return [];
   return fs.readdirSync(root).flatMap((id) => {
-    const file = path.join(root, id, "profile.json");
+    const directory = path.join(root, id);
+    const file = path.join(directory, "profile.json");
     try {
       const profile = JSON.parse(fs.readFileSync(file, "utf8")) as unknown;
       if (!profile || typeof profile !== "object" || !("name" in profile) || typeof profile.name !== "string") {
         return [];
       }
-      return [{ id, name: profile.name }];
+      // Sand stores chat rooms beside agents and marks each room with group.json.
+      const kind: GrokProfile["kind"] = fs.existsSync(path.join(directory, "group.json")) ? "room" : "agent";
+      return [{ id, name: profile.name, kind }];
     } catch {
       return [];
     }
   }).sort((left, right) => left.name.localeCompare(right.name));
+}
+
+export function discoverAgents(root = agentsRoot()): GrokAgent[] {
+  return discoverProfiles(root)
+    .filter((profile) => profile.kind === "agent")
+    .map(({ id, name }) => ({ id, name }));
 }
 
 export function resolveAgent(value: string, available = discoverAgents()): GrokAgent {

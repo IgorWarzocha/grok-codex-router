@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { discoverAgents, resolveAgent } from "../src/agents.js";
+import { discoverAgents, discoverProfiles, resolveAgent } from "../src/agents.js";
 import {
   configPath,
   DEFAULT_CONFIG,
@@ -117,8 +117,13 @@ function printRoutes(): void {
   for (const [name, route] of Object.entries(config.classes)) {
     console.log("class:" + name + "\t" + route.model + "\t" + route.reasoningEffort);
   }
-  const names = new Map(discoverAgents().map((agent) => [agent.id, agent.name]));
+  const profiles = discoverProfiles();
+  const names = new Map(profiles
+    .filter((profile) => profile.kind === "agent")
+    .map((agent) => [agent.id, agent.name]));
+  const roomIds = new Set(profiles.filter((profile) => profile.kind === "room").map((room) => room.id));
   for (const [id, route] of Object.entries(config.agents)) {
+    if (roomIds.has(id)) continue;
     console.log((names.get(id) || id) + "\t" + route.model + "\t" + route.reasoningEffort + "\t" + id);
   }
 }
