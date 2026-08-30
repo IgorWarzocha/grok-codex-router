@@ -15,6 +15,11 @@ function serviceRoot(): string {
   return path.join(process.env.SAND_DATA_ROOT || path.join(os.homedir(), "sand-data"), "grok-codex-router-service");
 }
 
+function ensurePrivateServiceRoot(): void {
+  fs.mkdirSync(serviceRoot(), { recursive: true, mode: 0o700 });
+  fs.chmodSync(serviceRoot(), 0o700);
+}
+
 function pidFile(): string {
   return path.join(serviceRoot(), "supervisor.pid");
 }
@@ -57,9 +62,9 @@ export function controlServiceStatus(): ControlServiceStatus {
 }
 
 export function ensureControlService(): ControlServiceStatus {
+  ensurePrivateServiceRoot();
   const current = controlServiceStatus();
   if (current.running) return current;
-  fs.mkdirSync(serviceRoot(), { recursive: true, mode: 0o700 });
   try { fs.unlinkSync(pidFile()); } catch {}
   const log = fs.openSync(logFile(), "a", 0o600);
   const child = spawn(process.execPath, [supervisorEntry()], {
@@ -86,6 +91,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function stopControlService(): Promise<ControlServiceStatus> {
+  ensurePrivateServiceRoot();
   const current = controlServiceStatus();
   if (current.running && current.pid) {
     try { process.kill(current.pid, "SIGTERM"); } catch {}

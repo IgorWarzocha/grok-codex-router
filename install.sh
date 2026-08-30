@@ -13,6 +13,10 @@ done
 printf '%s\n' 'Installing locked dependencies...'
 bun install --frozen-lockfile --ignore-scripts
 
+printf '%s\n' 'Preparing preserved router state...'
+bun run build
+node dist/bin/grok-codex-router.js service-stop
+
 printf '%s\n' 'Building and checking the router...'
 bun run check
 
