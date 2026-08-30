@@ -117,7 +117,11 @@ const summaryEndAnchors = [
 const summaryEnds = summaryEndAnchors
   .map((anchor) => source.indexOf(anchor, summaryStart))
   .filter((index) => index >= 0);
-const summaryEnd = summaryEnds.length === 1 ? summaryEnds[0]! : -1;
+const summaryEndCount = summaryEndAnchors.reduce(
+  (total, anchor) => total + count(source.slice(summaryStart), anchor),
+  0
+);
+const summaryEnd = summaryEnds.length === 1 && summaryEndCount === 1 ? summaryEnds[0]! : -1;
 if (summaryEnd < 0) fail("could not isolate turn summarization session");
 let summary = source.slice(summaryStart, summaryEnd);
 const summaryAnchor = [
