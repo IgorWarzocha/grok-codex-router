@@ -108,10 +108,12 @@ if (!source.includes(mainIdentity)) {
 }
 
 const summaryOwner = "        const summarizationSession = sanitizePromptSessionUsage(";
+if (count(source, summaryOwner) !== 1) fail("expected one turn summarization session");
+const summaryBoundary = "        const turnStartedAtMs = Date.now();";
+if (count(source, summaryBoundary) !== 1) fail("expected one turn summarization boundary");
 const summaryStart = source.indexOf(summaryOwner);
-if (summaryStart < 0) fail("missing turn summarization session");
-const summaryEnd = source.indexOf("        let mcpTools = [];", summaryStart);
-if (summaryEnd < 0) fail("could not isolate turn summarization session");
+const summaryEnd = source.indexOf(summaryBoundary, summaryStart);
+if (summaryEnd < 0) fail("turn summarization boundary precedes its session");
 let summary = source.slice(summaryStart, summaryEnd);
 const summaryAnchor = [
   "            {",
