@@ -24,11 +24,11 @@ printf '%s\n' 'Linking the management command...'
 bun link --ignore-scripts
 
 printf '%s\n' 'Installing the host patch and control service...'
-grok-codex-router install
+node dist/bin/grok-codex-router.js install
 
 printf '%s\n' 'Verifying the direct cached tool round-trip...'
-grok-codex-router verify
+node dist/bin/grok-codex-router.js verify
 
 printf '\n%s\n' 'Grok Codex Router is ready.'
 printf '%s\n' 'Control UI: http://127.0.0.1:21371'
-grok-codex-router status
+node dist/bin/grok-codex-router.js status
