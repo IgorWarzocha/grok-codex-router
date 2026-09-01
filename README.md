@@ -49,6 +49,19 @@ The UI offers GPT-5.6 Sol, Luna, and Terra. An agent can inherit the complete de
 
 Settings gives Sol, Luna, and Terra independent effective context windows of 272k, 472k, or 872k tokens. The router reports the selected model's window to Grok Bot so native compaction uses the same budget. It does not send an unsupported context-limit field to Codex. Each model defaults to 272k.
 
+## Switch inference source
+
+Use **Switch off** in the UI to return Grok Bot to its native inference. The host patch, control service, routes, and usage history stay in place, so **Switch on** restores Codex routing without reinstalling anything.
+
+The same actions are available from the CLI:
+
+```bash
+grok-codex-router off
+grok-codex-router on
+```
+
+Each action changes the saved inference source and asks Sand's supervisor to restart the native host after active turns are idle.
+
 ## Choose a transport
 
 | Mode | Behavior |
@@ -110,6 +123,8 @@ The bundled skill in `.agents/skills/grok-codex-router/` gives Codex-compatible 
 grok-codex-router status
 grok-codex-router agents
 grok-codex-router routes
+grok-codex-router off
+grok-codex-router on
 grok-codex-router route "Agent Name" gpt-5.6-sol high
 grok-codex-router class summarization gpt-5.6-luna medium
 grok-codex-router auth-store pi

@@ -75,6 +75,7 @@ h2 {
 .header-actions {
   display: flex;
   align-items: center;
+  gap: 10px;
 }
 
 .workspace-nav {
@@ -208,6 +209,11 @@ a:focus-visible {
 
 button:hover {
   border-color: var(--text);
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .primary-button:hover {

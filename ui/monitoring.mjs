@@ -24,12 +24,20 @@ function thinkingLabel(effort) {
 }
 
 function renderOverview(state) {
+  const enabled = state.config.enabled !== false;
   byId("host-status").textContent = state.host.hostVersion ? "Connected" : "Checking";
   byId("host-status").dataset.state = state.host.hostVersion ? "healthy" : "checking";
-  byId("router-status").textContent = phaseLabel(state.host.phase);
-  byId("router-status").dataset.state = state.host.phase;
-  byId("auth-status").textContent = state.auth.ok ? "Connected" : "Needs attention";
-  byId("auth-status").dataset.state = state.auth.ok ? "healthy" : "error";
+  byId("router-status").textContent = enabled ? phaseLabel(state.host.phase) : "Off";
+  byId("router-status").dataset.state = enabled ? state.host.phase : "off";
+  byId("auth-status").textContent = enabled ? (state.auth.ok ? "Connected" : "Needs attention") : "Standby";
+  byId("auth-status").dataset.state = enabled ? (state.auth.ok ? "healthy" : "error") : "off";
+
+  const toggle = byId("router-toggle");
+  toggle.textContent = enabled ? "Switch off" : "Switch on";
+  toggle.dataset.enabled = String(enabled);
+  toggle.classList.toggle("quiet-button", enabled);
+  toggle.classList.toggle("primary-button", !enabled);
+  toggle.disabled = state.manualAction?.state === "running";
 
   const summary = state.telemetry.summary;
   const cacheBase = summary.inputTokens + summary.cachedInputTokens + summary.cacheWriteInputTokens;

@@ -41,6 +41,16 @@ test("root agents route by immutable ID while workload classes stay explicit", (
   });
 });
 
+test("router state defaults on for existing configs and preserves an explicit switch off", () => {
+  const { enabled: _enabled, ...existingConfig } = structuredClone(DEFAULT_CONFIG);
+  assert.equal(validateConfig(existingConfig).enabled, true);
+  assert.equal(validateConfig({ ...existingConfig, enabled: false }).enabled, false);
+  assert.throws(
+    () => validateConfig({ ...existingConfig, enabled: "false" }),
+    /enabled must be a boolean/
+  );
+});
+
 test("auxiliary executors cannot replace the root turn continuation lane", () => {
   const root = "grok:" + "a".repeat(59);
   assert.equal(executorSessionIdFor(root, 0), root);

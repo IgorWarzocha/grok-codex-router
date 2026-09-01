@@ -23,6 +23,7 @@ export interface ResolvedRoute extends Route {
 
 export interface RouterConfig {
   version: 1;
+  enabled: boolean;
   authStore: "pi" | "codex";
   contextWindows: Record<RouterModel, ContextWindowTokens>;
   default: Route;
@@ -47,6 +48,7 @@ export interface SandSessionOptions {
 
 export const DEFAULT_CONFIG = Object.freeze<RouterConfig>({
   version: 1,
+  enabled: true,
   authStore: "pi",
   contextWindows: {
     "gpt-5.6-sol": 272_000,
@@ -115,6 +117,9 @@ export function contextWindowForModel(config: RouterConfig, model: string): Cont
 export function validateConfig(raw: unknown): RouterConfig {
   if (!isRecord(raw)) throw new Error("router config must be an object");
   if (raw.version !== 1) throw new Error("router config version must be 1");
+  if (raw.enabled !== undefined && typeof raw.enabled !== "boolean") {
+    throw new Error("enabled must be a boolean");
+  }
   if (raw.authStore !== "pi" && raw.authStore !== "codex") {
     throw new Error("authStore must be pi or codex");
   }
@@ -149,6 +154,7 @@ export function validateConfig(raw: unknown): RouterConfig {
   ) as Record<RouterModel, ContextWindowTokens>;
   return {
     version: 1,
+    enabled: raw.enabled ?? true,
     authStore: raw.authStore,
     contextWindows,
     default: validateRoute(raw.default, "default"),

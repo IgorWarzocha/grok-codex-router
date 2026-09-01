@@ -144,6 +144,10 @@ export function createExecutor(
   };
 }
 
+export function isCodexRouterEnabled(): boolean {
+  return loadConfig().enabled;
+}
+
 export function createCodexRouterSession(options: SessionOptions = {}): CodexRouterSession {
   const config = loadConfig();
   const sessionOptions = options.sessionOptions || {};

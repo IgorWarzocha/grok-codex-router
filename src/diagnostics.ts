@@ -86,6 +86,7 @@ export function issueReport(): string {
     "- Patcher: " + patch.status,
     "- Patcher detail: " + patch.detail,
     "- Control service: " + (service.running ? "running" : "stopped"),
+    "- Codex routing: " + (config.enabled ? "on" : "off"),
     "- Sand supervisor: " + supervisor,
     "- OAuth store health: " + auth,
     "- Context windows: " + ROUTER_MODELS.map((model) =>

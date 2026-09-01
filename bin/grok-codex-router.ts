@@ -111,6 +111,15 @@ function setContextWindow(modelValue: string | undefined, windowValue: string | 
   console.log("wrote " + writeConfig(config));
 }
 
+function setRouterEnabled(enabled: boolean): void {
+  const config = loadConfig();
+  if (enabled) credentialStatus(config.authStore);
+  config.enabled = enabled;
+  writeConfig(config);
+  runBuiltScript("restart-host");
+  console.log("Codex routing switched " + (enabled ? "on" : "off"));
+}
+
 function printRoutes(): void {
   const config = loadConfig();
   console.log("default\t" + config.default.model + "\t" + config.default.reasoningEffort);
@@ -185,14 +194,19 @@ async function verify(identity?: string): Promise<void> {
 
 function status(): void {
   const config = loadConfig();
-  const auth = credentialStatus(config.authStore);
   const host = path.join(process.env.SAND_HOST_DIR || path.join(os.homedir(), "sand-host"), "host-main.cjs");
   const patched = fs.existsSync(host) && fs.readFileSync(host, "utf8").includes("GROK_CODEX_ROUTER_SESSION_START");
   const service = controlServiceStatus();
   console.log("config\t" + configPath());
-  console.log("auth\t" + auth.store + "\tvalid " + Math.floor(auth.validForMs / 60000) + "m");
+  try {
+    const auth = credentialStatus(config.authStore);
+    console.log("auth\t" + auth.store + "\tvalid " + Math.floor(auth.validForMs / 60000) + "m");
+  } catch {
+    console.log("auth\t" + config.authStore + "\tunavailable");
+  }
   console.log("host patch\t" + (patched ? "installed" : "missing"));
   console.log("control service\t" + (service.running ? "running" : "stopped") + "\t" + service.url);
+  console.log("Codex routing\t" + (config.enabled ? "on" : "off"));
   console.log(
     "context windows\t" +
     ROUTER_MODELS.map((model) =>
@@ -216,6 +230,8 @@ function help(): void {
     "  status",
     "  agents",
     "  routes",
+    "  on",
+    "  off",
     "  auth-store pi|codex",
     "  context-window sol|luna|terra 272k|472k|872k",
     "  default MODEL EFFORT",
@@ -238,6 +254,8 @@ async function main(): Promise<void> {
   else if (command === "init") console.log("config ready: " + initialize());
   else if (command === "agents") printAgents();
   else if (command === "routes") printRoutes();
+  else if (command === "on") setRouterEnabled(true);
+  else if (command === "off") setRouterEnabled(false);
   else if (command === "auth-store") setAuthStore(values[0]);
   else if (command === "context-window") setContextWindow(values[0], values[1]);
   else if (command === "status") status();

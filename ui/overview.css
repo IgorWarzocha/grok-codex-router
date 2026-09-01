@@ -77,6 +77,10 @@
   color: var(--accent);
 }
 
+[data-state="off"] {
+  color: var(--muted);
+}
+
 [data-state="incompatible"],
 [data-state="error"] {
   color: var(--danger);

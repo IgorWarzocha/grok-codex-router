@@ -57,7 +57,7 @@ if (!serviceInstalled) {
 
 const oldHookStart = '      const inferenceProvider = (process.env.SAND_INFERENCE_PROVIDER || "xai").toLowerCase();';
 const cursorAnchor = "      const session = createCursorInferencePromptSession({";
-const routerHook = [
+const previousRouterHook = [
   "      " + START,
   '      const inferenceProvider = (process.env.SAND_INFERENCE_PROVIDER || "codex-router").toLowerCase();',
   '      if (inferenceProvider !== "cursor") {',
@@ -71,8 +71,31 @@ const routerHook = [
   "      }",
   "      " + END
 ].join("\n");
+const routerHook = [
+  "      " + START,
+  '      const routerHome = process.env.SAND_CODEX_ROUTER_HOME || require("path").join(require("os").homedir(), "grok-codex-router");',
+  '      const { createCodexRouterSession, isCodexRouterEnabled } = require(routerHome);',
+  "      if (isCodexRouterEnabled()) {",
+  "        return createCodexRouterSession({",
+  "          requestedModel,",
+  "          onRequestId,",
+  "          sessionOptions",
+  "        });",
+  "      }",
+  "      " + END
+].join("\n");
 
-if (!source.includes(START)) {
+if (source.includes(START)) {
+  if (count(source, START) !== 1 || count(source, END) !== 1) fail("router hook markers are not unique");
+  const start = source.lastIndexOf("\n", source.indexOf(START)) + 1;
+  const end = source.indexOf(END, start) + END.length;
+  const installedHook = source.slice(start, end);
+  if (installedHook === previousRouterHook) {
+    source = source.slice(0, start) + routerHook + source.slice(end);
+  } else if (installedHook !== routerHook) {
+    fail("installed router hook has an unfamiliar shape");
+  }
+} else {
   if (source.includes(oldHookStart)) {
     const start = source.indexOf(oldHookStart);
     const end = source.indexOf(cursorAnchor, start);

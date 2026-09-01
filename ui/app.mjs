@@ -50,6 +50,25 @@ byId("save-config").addEventListener("click", async (event) => {
 });
 
 byId("refresh").addEventListener("click", refresh);
+byId("router-toggle").addEventListener("click", async (event) => {
+  const button = event.currentTarget;
+  const enabled = currentState?.config.enabled !== false;
+  if (enabled && !confirm("Switch off Codex routing and return Grok Bot to native inference after an idle restart?")) return;
+  button.disabled = true;
+  byId("action-status").textContent = enabled ? "Switching to native inference." : "Switching to Codex inference.";
+  try {
+    await request("/api/router", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ enabled: !enabled })
+    });
+    await refresh();
+  } catch (error) {
+    byId("action-status").textContent = error.message;
+  } finally {
+    button.disabled = currentState?.manualAction?.state === "running";
+  }
+});
 byId("recover").addEventListener("click", async () => {
   byId("action-status").textContent = "Starting compatibility recovery.";
   await request("/api/recover", { method: "POST" }).catch((error) => {

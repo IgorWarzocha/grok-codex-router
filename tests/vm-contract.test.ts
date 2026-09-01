@@ -64,6 +64,7 @@ test("the live Sand host accepts the compiled patch without mutation", () => {
 test("the package root exposes exactly the host bootstrap surface", () => {
   const loaded = createRequire(__filename)(routerHome) as Record<string, unknown>;
   assert.equal(typeof loaded["createCodexRouterSession"], "function");
+  assert.equal(typeof loaded["isCodexRouterEnabled"], "function");
   assert.equal(typeof loaded["ensureControlService"], "function");
 });
 
