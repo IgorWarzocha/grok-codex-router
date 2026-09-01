@@ -116,7 +116,6 @@ function setRouterEnabled(enabled: boolean): void {
   if (enabled) credentialStatus(config.authStore);
   config.enabled = enabled;
   writeConfig(config);
-  runBuiltScript("restart-host");
   console.log("Codex routing switched " + (enabled ? "on" : "off"));
 }
 

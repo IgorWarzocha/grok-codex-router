@@ -64,15 +64,20 @@ function runPatcher(hostDir: string, ...args: string[]) {
   });
 }
 
-function runHostSession(hostFile: string, routerHome: string, enabled: boolean) {
+function runHostSessions(hostFile: string, routerHome: string) {
   return spawnSync(process.execPath, [
     "-e",
-    `Promise.resolve(require(${JSON.stringify(hostFile)})()).then((session) => console.log(session.provider))`
+    [
+      `(async () => { const createSession = require(${JSON.stringify(hostFile)});`,
+      'process.env.TEST_CODEX_ROUTER_ENABLED = "false";',
+      "console.log((await createSession()).provider);",
+      'process.env.TEST_CODEX_ROUTER_ENABLED = "true";',
+      "console.log((await createSession()).provider); })()"
+    ].join(" ")
   ], {
     env: {
       ...process.env,
-      SAND_CODEX_ROUTER_HOME: routerHome,
-      TEST_CODEX_ROUTER_ENABLED: String(enabled)
+      SAND_CODEX_ROUTER_HOME: routerHome
     },
     encoding: "utf8"
   });
@@ -105,12 +110,9 @@ test("the current Sand summarization boundary patches idempotently", () => {
     assert.equal(patched.split("GROK_CODEX_ROUTER_SESSION_START").length - 1, 1);
     assert.equal(patched.split("GROK_CODEX_ROUTER_SERVICE_START").length - 1, 1);
     assert.equal(patched.split("          conversationId,").length - 1, 2);
-    const nativeSession = runHostSession(hostFile, routerHome, false);
-    assert.equal(nativeSession.status, 0, nativeSession.stderr);
-    assert.equal(nativeSession.stdout.trim(), "native");
-    const routerSession = runHostSession(hostFile, routerHome, true);
-    assert.equal(routerSession.status, 0, routerSession.stderr);
-    assert.equal(routerSession.stdout.trim(), "router");
+    const sessions = runHostSessions(hostFile, routerHome);
+    assert.equal(sessions.status, 0, sessions.stderr);
+    assert.equal(sessions.stdout.trim(), "native\nrouter");
 
     const recheck = runPatcher(hostDir, "--check");
     assert.equal(recheck.status, 0, recheck.stderr);

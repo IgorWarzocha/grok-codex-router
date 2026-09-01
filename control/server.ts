@@ -175,10 +175,6 @@ async function api(request: http.IncomingMessage, response: http.ServerResponse,
     return true;
   }
   if (request.method === "POST" && pathname === "/api/router") {
-    if (manualAction?.state === "running") {
-      json(response, 409, { error: "another host action is still running" });
-      return true;
-    }
     const body = await requestBody(request);
     if (!isRecord(body) || typeof body["enabled"] !== "boolean") {
       json(response, 400, { error: "enabled must be a boolean" });
@@ -188,10 +184,7 @@ async function api(request: http.IncomingMessage, response: http.ServerResponse,
     if (body["enabled"]) credentialStatus(config.authStore);
     config.enabled = body["enabled"];
     writeConfig(config);
-    runManualAction(body["enabled"] ? "Codex routing activation" : "Codex routing deactivation", async () => {
-      await requestHostRestart({ reason: "grok-codex-router control UI changed inference source" });
-    });
-    json(response, 202, { ok: true, enabled: config.enabled });
+    json(response, 200, { ok: true, enabled: config.enabled });
     return true;
   }
   if (request.method === "POST" && pathname === "/api/recover") {

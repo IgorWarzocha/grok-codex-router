@@ -60,7 +60,7 @@ grok-codex-router off
 grok-codex-router on
 ```
 
-Each action changes the saved inference source and asks Sand's supervisor to restart the native host after active turns are idle.
+The switch applies when Grok Bot creates its next inference session. A turn already in progress finishes on its current source. No host restart is needed.
 
 ## Choose a transport
 
